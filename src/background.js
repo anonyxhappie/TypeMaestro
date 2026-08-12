@@ -33,6 +33,17 @@ async function setupOffscreenDocument(path) {
 
 // Handle messages from content script and forward to offscreen document
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'GET_INITIAL_STATE') {
+    chrome.storage.local.get(['isTypeMaestroEnabled', 'currentPreset', 'masterVolume'], (result) => {
+      sendResponse(result || {
+        isTypeMaestroEnabled: true,
+        currentPreset: 'Deep Focus',
+        masterVolume: 0.5
+      });
+    });
+    return true; // Keep message channel open for async response
+  }
+
   if (message.type === 'TELEMETRY_UPDATE') {
     // Ensure the offscreen document is ready before sending
     setupOffscreenDocument('src/offscreen.html').then(() => {

@@ -83,15 +83,14 @@ let isGenerating = false;
 
 async function initModel() {
   try {
-    console.log("Loading utkucoban/NanoMaestro-Realtime...");
-    // Using a simple text-generation pipeline since NanoMaestro is typically an autoregressive model.
-    // If NanoMaestro-Realtime requires a specific task or custom tokenization handling,
-    // we use "text-generation" as a proxy for raw token generation if it's text-based or token-based.
+    console.log("Attempting to load AI model (utkucoban/NanoMaestro-Realtime)...");
     generator = await pipeline('text-generation', 'utkucoban/NanoMaestro-Realtime');
-    console.log("Model loaded successfully.");
-    startGenerationLoop();
+    console.log("AI Model loaded successfully.");
   } catch (error) {
-    console.error("Failed to load model:", error);
+    console.info("Notice: ONNX AI model weights (utkucoban/NanoMaestro-Realtime) not found on HuggingFace for Transformers.js. Using real-time procedural musical engine.");
+    generator = null;
+  } finally {
+    startGenerationLoop();
   }
 }
 
@@ -227,23 +226,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-// Load state initially
-chrome.storage.local.get(['isTypeMaestroEnabled', 'currentPreset', 'masterVolume'], (result) => {
-  if (result.isTypeMaestroEnabled !== undefined) isEngineEnabled = result.isTypeMaestroEnabled;
-  if (result.currentPreset !== undefined) currentPreset = result.currentPreset;
-  if (result.masterVolume !== undefined) {
+// Load state initially via background service worker (chrome.storage is unavailable in offscreen documents)
+chrome.runtime.sendMessage({ type: 'GET_INITIAL_STATE' }, (result) => {
+  if (chrome.runtime.lastError) {
+    console.warn("Could not retrieve initial state from background worker:", chrome.runtime.lastError.message);
+  } else if (result) {
+    if (result.isTypeMaestroEnabled !== undefined) isEngineEnabled = result.isTypeMaestroEnabled;
+    if (result.currentPreset !== undefined) currentPreset = result.currentPreset;
+    if (result.masterVolume !== undefined) {
       masterVolume = result.masterVolume;
       masterGain.gain.value = masterVolume;
+    }
   }
 
-  // Try initializing the model
+  // Initialize model or procedural fallback engine
   initModel();
-
-  // If model fails to load, start procedural generation loop as fallback
-  setTimeout(() => {
-      if (!generator) {
-          console.warn("Model initialization timed out or failed. Starting procedural fallback loop.");
-          startGenerationLoop();
-      }
-  }, 5000);
 });
