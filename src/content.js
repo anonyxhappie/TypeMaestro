@@ -127,9 +127,23 @@ document.addEventListener('keydown', (event) => {
     pauseDuration
   });
 
+  // Send real-time keystroke event for immediate tone playback
+  sendKeyStroke(event.key);
+
   // Calculate and send telemetry immediately on keypress
   calculateAndSendMetrics();
 }, true); // Use capture phase to catch key events before web apps stop propagation
+
+function sendKeyStroke(key) {
+  try {
+    chrome.runtime.sendMessage({
+      type: 'KEY_STROKE_EVENT',
+      key
+    });
+  } catch (e) {
+    // Background worker might be sleeping, ignore gracefully
+  }
+}
 
 // Also calculate and send metrics periodically (every second)
 setInterval(() => {

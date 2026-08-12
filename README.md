@@ -14,6 +14,13 @@
 ## 🌟 Key Features
 
 * **⚡ Real-Time Typing Telemetry**: Analyzes keypress pace (WPM), inter-key timing variance (burstiness), backspace corrections, and activity pauses within a sliding window.
+* **🎵 Interactive Keystroke Tones**: Every letter, digit, and keypress plays a unique, harmoniously mapped sequence of notes in real-time as you type.
+* **🎷 Selectable Keystroke Instruments**: Choose between 5 custom Web Audio instrument timbres:
+  * 🎹 **Grand Piano**: Dual-oscillator warm acoustic piano timbre.
+  * 🔔 **Crystal Chimes**: Shiny high-frequency metallic bell ring with extended reverb.
+  * 🪵 **Wood Marimba**: Woody percussive attack with biquad filter dampening.
+  * 👾 **Retro Synthesizer**: Classic 8-bit square wave synth lead.
+  * 🌌 **Ethereal Pad**: Ambient sine/triangle swell with spacious reverberation.
 * **🧠 Hybrid Generative Audio Engine**:
   * **On-Device AI Inference**: Powered by [`@xenova/transformers`](https://github.com/xenova/transformers.js) running `utkucoban/NanoMaestro-Realtime` directly inside your browser.
   * **Procedural Algorithmic Fallback**: Instant fallback generator using harmonic scale intervals and dynamic velocity mapping when offline or loading the model.

@@ -88,6 +88,12 @@
     }
 
     /* Controls */
+    .control-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
     .control-group {
       margin-bottom: 16px;
     }
@@ -96,6 +102,9 @@
       font-size: 0.85rem;
       margin-bottom: 6px;
       color: #bbb;
+    }
+    .control-row .control-label {
+      margin-bottom: 0;
     }
     select {
       width: 100%;
@@ -127,8 +136,40 @@
     <p id="statusDisplay">Awaiting input...</p>
   </div>
 
+  <div class="control-row">
+    <span class="control-label">Keystroke Tones</span>
+    <label class="switch">
+      <input type="checkbox" id="keyTonesToggle" checked>
+      <span class="slider"></span>
+    </label>
+  </div>
+
   <div class="control-group">
-    <label class="control-label" for="presetSelect">Mood Preset</label>
+    <label class="control-label" for="instrumentSelect">Keystroke Instrument</label>
+    <select id="instrumentSelect">
+      <option value="Grand Piano">🎹 Grand Piano</option>
+      <option value="Crystal Chimes">🔔 Crystal Chimes</option>
+      <option value="Wood Marimba">🪵 Wood Marimba</option>
+      <option value="Retro Synth">👾 Retro Synthesizer</option>
+      <option value="Ethereal Pad">🌌 Ethereal Pad</option>
+    </select>
+  </div>
+
+  <div class="control-group">
+    <label class="control-label" for="keystrokeVolumeSlider">Keystroke Tones Volume</label>
+    <input type="range" id="keystrokeVolumeSlider" min="0" max="1" step="0.05" value="0.8">
+  </div>
+
+  <div class="control-row" style="margin-top: 12px;">
+    <span class="control-label">Ambient Music Flow</span>
+    <label class="switch">
+      <input type="checkbox" id="ambientToggle">
+      <span class="slider"></span>
+    </label>
+  </div>
+
+  <div class="control-group">
+    <label class="control-label" for="presetSelect">Ambient Mood Preset</label>
     <select id="presetSelect">
       <option value="Deep Focus">Deep Focus</option>
       <option value="Ambient Dream">Ambient Dream</option>
@@ -137,8 +178,13 @@
   </div>
 
   <div class="control-group">
+    <label class="control-label" for="ambientVolumeSlider">Ambient Music Volume</label>
+    <input type="range" id="ambientVolumeSlider" min="0" max="1" step="0.05" value="0.3">
+  </div>
+
+  <div class="control-group">
     <label class="control-label" for="volumeSlider">Master Volume</label>
-    <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.5">
+    <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="0.8">
   </div>
 
   <script type="module" src="popup.js"></script>
