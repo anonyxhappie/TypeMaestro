@@ -1,75 +1,85 @@
 # 🎹 TypeMaestro
 
-> **Ambient piano music dynamically matched to your typing rhythm.**
+> **Instant, per-keystroke instrument tones & ambient piano music dynamically matched to your typing rhythm.**
 
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![Vite](https://img.shields.io/badge/Vite-5.4-646CFF.svg)](https://vitejs.dev/)
 [![Transformers.js](https://img.shields.io/badge/@xenova/transformers-2.17-orange.svg)](https://huggingface.co/docs/transformers.js)
 [![License: ISC](https://img.shields.io/badge/License-ISC-brightgreen.svg)](https://opensource.org/licenses/ISC)
 
-**TypeMaestro** is a Manifest V3 Chrome Extension that turns your keypresses into a personalized soundscape. As you type, TypeMaestro analyzes your typing rhythm in real-time—measuring speed, burstiness, pauses, and error corrections—to synthesize responsive ambient piano melodies on the fly using a hybrid AI and Web Audio synthesis engine.
+**TypeMaestro** is a Manifest V3 Chrome Extension that turns your keyboard into a real-time musical instrument and personalized focus soundscape. As you type, TypeMaestro plays deterministic, instant per-key instrument tones and analyzes your typing pace (WPM, burstiness, backspace frequency) to synthesize responsive background ambient piano music on the fly using a Web Audio synthesis engine.
 
 ---
 
 ## 🌟 Key Features
 
-* **⚡ Real-Time Typing Telemetry**: Analyzes keypress pace (WPM), inter-key timing variance (burstiness), backspace corrections, and activity pauses within a sliding window.
-* **🎵 Interactive Keystroke Tones**: Every letter, digit, and keypress plays a unique, harmoniously mapped sequence of notes in real-time as you type.
-* **🎷 Selectable Keystroke Instruments**: Choose between 5 custom Web Audio instrument timbres:
-  * 🎹 **Grand Piano**: Dual-oscillator warm acoustic piano timbre.
-  * 🔔 **Crystal Chimes**: Shiny high-frequency metallic bell ring with extended reverb.
-  * 🪵 **Wood Marimba**: Woody percussive attack with biquad filter dampening.
-  * 👾 **Retro Synthesizer**: Classic 8-bit square wave synth lead.
-  * 🌌 **Ethereal Pad**: Ambient sine/triangle swell with spacious reverberation.
+* **⚡ 0ms Real-Time Keystroke Feedback**: Instant, zero-latency instrument audio output (`playInstrumentToneSync`) on every single keypress with crisp attack transients.
+* **🔒 1-to-1 Fixed Pitch Mapping**: Every single key on your keyboard (`a`–`z`, `0`–`9`, Spacebar, Enter, Backspace, Delete, Tab) is deterministically bound to its own unique musical pitch:
+  * **`r`** ➔ **A#3 (Note 58)** *(consistently plays the exact same tone every time `r` is pressed)*
+  * **`a`** ➔ **C4 (Note 60)**
+  * **`e`** ➔ **E4 (Note 64)**
+  * **`t`** ➔ **E5 (Note 76)**
+  * **Spacebar** ➔ **Low Bass C3 (Note 48)**
+  * **Enter** ➔ **High C6 (Note 96)**
+  * **Uppercase (`Shift + Key`)** ➔ Transposed 1 octave higher (+12 semitones).
+* **🎷 5 Selectable Instrument Timbres**:
+  * 🎹 **Grand Piano**: Dual-oscillator acoustic piano synthesis with sub-octave warmth.
+  * 🔔 **Crystal Chimes**: Shiny high-frequency bell ring with metallic harmonic shimmer.
+  * 🪵 **Wood Marimba**: Woody percussive attack with lowpass biquad filtering.
+  * 👾 **Retro Synthesizer**: Classic 8-bit vintage square wave synth lead.
+  * 🌌 **Ethereal Pad**: Smooth sine/triangle swell with spacious reverberation.
+* **🎛️ Independent Volume & Toggle Controls**:
+  * **⚡ Extension Power Toggle**: Master extension on/off switch.
+  * **🎵 Keystroke Tones Toggle**: Toggle per-key instrument sounds.
+  * **🎼 Ambient Music Flow Toggle**: Toggle background ambient music generation (OFF by default for distraction-free typing).
+  * **🎚️ Dual Volume Sliders**: Independent sliders for **Keystroke Tones Volume** and **Ambient Music Volume**, plus **Master Volume**.
+* **🌐 Web Editor Compatibility**: Injects capture-phase listeners to reliably intercept keypresses across Monaco Editor / VS Code Web (`vscode.dev`), CodeMirror, Ace, ProseMirror, Slate, Google Docs, Notion, and standard input fields.
 * **🧠 Hybrid Generative Audio Engine**:
   * **On-Device AI Inference**: Powered by [`@xenova/transformers`](https://github.com/xenova/transformers.js) running `utkucoban/NanoMaestro-Realtime` directly inside your browser.
   * **Procedural Algorithmic Fallback**: Instant fallback generator using harmonic scale intervals and dynamic velocity mapping when offline or loading the model.
-* **🎛️ Mood Presets**:
-  * **Deep Focus**: Steady sine waves with low reverb for concentrated work sessions.
-  * **Ambient Dream**: Ethereal, slow-attack notes paired with wide convolver reverb space.
-  * **Lofi Chill**: Warm triangle tones with relaxed dynamics and ambient warmth.
-* **🔊 Web Audio API Synthesizer**: Custom real-time Web Audio graph featuring ADSR gain envelopes, frequency mapping, and an impulse-response convolver reverb node.
-* **🔒 100% Privacy & On-Device Processing**: Keystroke timing and metrics are processed locally in temporary memory. Text content is **never** saved, logged, or sent over the network.
-* **⚡ Continuous Offscreen Playback**: Employs Chrome Offscreen Documents to keep audio playback smooth and glitch-free without slowing down active tabs.
+* **🔒 100% On-Device Privacy**: Keystroke timing metadata is processed locally in temporary memory. Text content is **never** saved, logged, or transmitted over the network.
+* **🧹 Garbage-Collected Audio Graph**: Automatic Web Audio node cleanup (`autoCleanup`) prevents memory leaks, CPU spikes, or browser freezing during rapid typing.
 
 ---
 
 ## 🏗️ Architecture & Data Flow
 
-TypeMaestro uses a modular Chrome Extension (Manifest V3) architecture:
+TypeMaestro uses a high-performance Manifest V3 architecture optimized for zero-latency audio synthesis:
 
 ```mermaid
 flowchart TD
-    subgraph Browser Tab
+    subgraph Browser Tab / Web Editor
         CS[Content Script: content.js]
     end
 
-    subgraph Background Service Worker
-        SW[Service Worker: background.js]
+    subgraph Service Worker
+        SW[Background Service Worker: background.js]
     end
 
-    subgraph Offscreen Context
+    subgraph Offscreen Document
         OFF[Offscreen Document: offscreen.js]
-        SYNTH[Web Audio Synthesizer]
+        SYNTH[Synchronous Web Audio Engine]
         AI[NanoMaestro AI Engine]
     end
 
-    subgraph Extension UI
-        POP[Popup Interface: popup.js]
+    subgraph Extension Popup UI
+        POP[Popup Controls: popup.js / popup.html]
     end
 
-    CS -->|Keystroke Telemetry| SW
+    CS -->|KEY_STROKE_EVENT| SW
+    SW -->|PLAY_KEY_TONE| OFF
+    CS -->|TELEMETRY_UPDATE| SW
     SW -->|ENGINE_UPDATE| OFF
-    POP -->|Settings & Toggles| SW
+    POP -->|Settings & Volume Toggles| SW
+    OFF --> SYNTH
     OFF --> AI
-    AI --> SYNTH
-    SYNTH -->|Audio Output| Speakers[🔊 Speakers / Headphones]
+    SYNTH -->|Instant 0ms Audio Output| Speakers[🔊 Speakers / Headphones]
 ```
 
-1. **Content Script (`content.js`)**: Listens to input field interactions, calculates real-time metrics (WPM, burstiness, backspaces, pause duration) over a sliding window, and emits periodic telemetry updates.
-2. **Service Worker (`background.js`)**: Coordinates messaging between content scripts, the popup interface, and manages the lifecycle of the offscreen document.
-3. **Offscreen Document (`offscreen.js`)**: Runs the Web Audio synthesis engine and Transformers.js model off the main thread to ensure smooth, uninhibited audio performance.
-4. **Popup Interface (`popup.js` / `popup.html`)**: Sleek dark-mode UI displaying live WPM statistics, engine status toggles, preset selectors, and master volume controls.
+1. **Content Script (`content.js`)**: Captures keydown events in the capture phase across standard inputs and complex web editors (Monaco/VS Code Web, CodeMirror, etc.), sending immediate key events and calculating sliding-window telemetry (WPM, burstiness, backspaces, pause duration).
+2. **Service Worker (`background.js`)**: Maintains the offscreen document lifecycle (`setupOffscreenDocument`) and forwards key tone events and settings updates.
+3. **Offscreen Document (`offscreen.js`)**: Hosts the Web Audio synthesis engine (`playInstrumentToneSync`) and AI inference loop off the main thread for uninhibited, zero-lag performance.
+4. **Popup UI (`popup.html` / `popup.js`)**: Modern dark-mode interface with live WPM statistics, independent feature toggles, instrument selector dropdown, and separate volume controls.
 
 ---
 
@@ -79,14 +89,14 @@ flowchart TD
 TypeMaestro/
 ├── src/
 │   ├── manifest.json       # Manifest V3 extension configuration
-│   ├── background.js       # Extension service worker & offscreen manager
-│   ├── content.js          # Injected telemetry script for keypress tracking
-│   ├── offscreen.html      # Offscreen document entry point
-│   ├── offscreen.js        # Web Audio API synth & Transformers.js AI model
+│   ├── background.js       # Background service worker & offscreen manager
+│   ├── content.js          # Injected telemetry & capture-phase key listener
+│   ├── offscreen.html      # Offscreen audio host document & media keepalive
+│   ├── offscreen.js        # Synchronous Web Audio synth & AI generation model
 │   ├── popup.html          # Extension popup UI layout
-│   └── popup.js            # Popup control logic & live WPM listener
+│   └── popup.js            # Popup settings controller & live WPM display
 ├── package.json            # Dependencies & build scripts
-├── vite.config.js          # Vite build config with @crxjs/vite-plugin
+├── vite.config.js          # Vite build configuration with @crxjs/vite-plugin
 └── README.md               # Project documentation
 ```
 
@@ -119,26 +129,22 @@ npm run build
 
 The compiled extension files will be created in the `dist/` directory.
 
-> **Development Mode**: You can run `npm run dev` to launch Vite in watch mode for auto-rebuilding during extension development.
-
 ### 3. Load in Google Chrome
 
 1. Open Google Chrome and navigate to `chrome://extensions/`.
 2. Enable **Developer mode** in the top right corner.
 3. Click **Load unpacked**.
-4. Select the `dist` folder located inside the `TypeMaestro` project directory.
-5. TypeMaestro is now installed! Pin the extension icon to your browser toolbar for quick access.
+4. Select the `dist` folder inside the `TypeMaestro` project directory.
+5. Pin TypeMaestro to your browser toolbar for quick access!
 
 ---
 
 ## 🎛️ Usage Guide
 
-1. **Toggle Audio Engine**: Open the extension popup and use the main toggle switch to turn TypeMaestro on or off.
-2. **Start Typing**: Click into any text field, text area, or editor (e.g., Google Docs, Notion, VS Code Web, Gmail) and begin typing.
-3. **Customize Your Mood**:
-   * Select a **Mood Preset** (*Deep Focus*, *Ambient Dream*, or *Lofi Chill*) from the dropdown menu to adjust note timbre, reverb space, and tempo dynamics.
-   * Adjust the **Master Volume** slider to match your background environment.
-4. **Observe Telemetry**: The popup displays your live **Typing Pace (WPM)** and engine status in real-time.
+1. **Keystroke Tones**: Type into any input field or web editor (`vscode.dev`, Google Docs, Notion). Pressing any key immediately plays its bound tone on your selected instrument.
+2. **Select Instrument**: Open the popup and select your instrument timbre (*Grand Piano*, *Crystal Chimes*, *Wood Marimba*, *Retro Synth*, or *Ethereal Pad*).
+3. **Ambient Music Flow**: By default, ambient background music is turned off. Toggle **Ambient Music Flow** ON in the popup if you'd like dynamic background melodies matched to your typing speed.
+4. **Adjust Volumes**: Use the independent **Keystroke Tones Volume** and **Ambient Music Volume** sliders to set the perfect mix for your workflow.
 
 ---
 
@@ -146,17 +152,17 @@ The compiled extension files will be created in the `dist/` directory.
 
 | Metric | Calculation Method | Impact on Generated Audio |
 | :--- | :--- | :--- |
-| **WPM (Words Per Minute)** | `(Keypresses / 5) * (60,000ms / 10,000ms window)` | Modulates note generation rate and delay timing |
-| **Burstiness** | Standard deviation of inter-key pause durations | Higher burstiness expands pitch octave jumps & velocity |
-| **Backspace Frequency** | `Backspace Count / Total Keypresses` | Softer touch & lowered velocity during error correction |
-| **Pause Duration** | Time elapsed since last keypress | Fades out generator loop during prolonged inactivity (>5s) |
+| **WPM (Words Per Minute)** | `(Keypresses / 5) * (60,000ms / 10,000ms window)` | Controls ambient note generation rate and delay timing |
+| **Burstiness** | Standard deviation of inter-key pause durations | Higher burstiness expands pitch octave jumps and note velocity |
+| **Backspace Frequency** | `Backspace Count / Total Keypresses` | Lowers note velocity during error correction |
+| **Pause Duration** | Time elapsed since last keypress | Pauses ambient generation loop during prolonged inactivity (>5s) |
 
 ---
 
 ## 🔒 Privacy & Security
 
 * **Zero Content Logging**: TypeMaestro tracks *timing metadata* (timestamps and key types like Backspace) strictly to compute WPM and variance. Specific text entries, passwords, and typed strings are **never recorded or stored**.
-* **100% Offline AI**: Model weights are cached locally via Transformers.js in browser cache. Audio generation happens entirely on your machine.
+* **100% Local Processing**: All audio synthesis and model evaluations occur on-device inside your browser.
 
 ---
 
