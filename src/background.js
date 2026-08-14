@@ -66,22 +66,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep message channel open for async response
   }
 
-  if (message.type === 'KEY_STROKE_EVENT') {
-    chrome.runtime.sendMessage({
-      type: 'PLAY_KEY_TONE',
-      key: message.key
-    }).catch(() => {
-      setupOffscreenDocument('src/offscreen.html');
-    });
-  }
-
   if (message.type === 'TELEMETRY_UPDATE') {
     chrome.runtime.sendMessage({
       type: 'ENGINE_UPDATE',
       metrics: message.metrics
-    }).catch(() => {
-      setupOffscreenDocument('src/offscreen.html');
-    });
+    }).catch(() => {});
   }
 
   if (message.type === 'TOGGLE_EXTENSION') {

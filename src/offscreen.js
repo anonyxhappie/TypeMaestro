@@ -203,7 +203,6 @@ function playInstrumentToneSync(midiNote, velocity = 85) {
     overtoneGain.gain.setTargetAtTime(0.0001, now + attack, release * 0.25);
     overtoneOsc.connect(overtoneGain);
     overtoneGain.connect(keystrokeGain);
-    if (convolver) overtoneGain.connect(convolver);
     
     const overtoneStop = now + release * 1.5;
     overtoneOsc.start(now);
@@ -266,12 +265,10 @@ function playInstrumentToneSync(midiNote, velocity = 85) {
   }
 
   const maxGain = (velocity / 127) * 0.4;
-  noteGain.gain.setValueAtTime(0.0001, now);
-  noteGain.gain.linearRampToValueAtTime(maxGain, now + attack);
+  noteGain.gain.setValueAtTime(maxGain, now);
   noteGain.gain.setTargetAtTime(0.0001, now + attack, release * 0.25);
 
   noteGain.connect(keystrokeGain);
-  if (convolver) noteGain.connect(convolver);
 
   const stopTime = now + attack + release * 1.5;
   osc.start(now);
@@ -286,83 +283,21 @@ function handleKeyTonePlayback(key) {
   playInstrumentToneSync(notes[0], 85);
 }
 
-// === AI Engine (NanoMaestro) ===
-let generator = null;
+// === Real-time High-Performance Procedural Engine ===
 let isGenerating = false;
-
-async function initModel() {
-  try {
-    console.log("Attempting to load AI model (utkucoban/NanoMaestro-Realtime)...");
-    generator = await pipeline('text-generation', 'utkucoban/NanoMaestro-Realtime');
-    console.log("AI Model loaded successfully.");
-  } catch (error) {
-    console.info("Notice: ONNX AI model weights (utkucoban/NanoMaestro-Realtime) not found on HuggingFace for Transformers.js. Using real-time procedural musical engine.");
-    generator = null;
-  } finally {
-    startGenerationLoop();
-  }
-}
-
-// Simple fallback procedural generator if the specific model fails to load or isn't a standard text pipeline
 let lastMidiNote = 60;
 const scale = [0, 2, 4, 5, 7, 9, 11]; // Major scale intervals
 
 async function generateNextNotes() {
   if (!isEngineEnabled || !isAmbientEnabled || ambientVolume <= 0) return;
-  const config = getPresetConfig();
 
-  // Base generation rate determined by WPM and preset delay
-  let delay = config.delay;
-  if (currentMetrics.wpm > 0) {
-    const speedFactor = Math.max(0.5, 1 - (currentMetrics.wpm / 100));
-    delay = delay * speedFactor;
-  } else {
-    if (currentMetrics.pauseDuration > 5000) {
-       return;
-    }
-  }
+  const step = scale[Math.floor(Math.random() * scale.length)];
+  const octave = Math.floor(Math.random() * 2) - 1;
+  const jumpMultiplier = currentMetrics.burstiness > 5 ? 2 : 1;
+  let nextMidi = 60 + step + (octave * 12 * jumpMultiplier);
 
-  let nextMidi = 60;
-
-  if (generator) {
-    try {
-      const seedText = `pitch_${lastMidiNote} wpm_${Math.round(currentMetrics.wpm)}`;
-      const out = await generator(seedText, {
-        temperature: config.temp,
-        max_new_tokens: 2
-      });
-
-      const generatedText = out[0].generated_text;
-
-      const matched = generatedText.match(/\d+/);
-      if (matched) {
-         nextMidi = parseInt(matched[0], 10);
-      } else {
-         let hash = 0;
-         for (let i = 0; i < generatedText.length; i++) {
-            hash = generatedText.charCodeAt(i) + ((hash << 5) - hash);
-         }
-         nextMidi = 60 + Math.abs(hash) % 24 - 12;
-      }
-
-      if (nextMidi < 48) nextMidi += 12;
-      if (nextMidi > 84) nextMidi -= 12;
-
-    } catch (e) {
-       console.error("Inference failed, falling back to procedural:", e);
-       const step = scale[Math.floor(Math.random() * scale.length)];
-       const octave = Math.floor(Math.random() * 2) - 1;
-       const jumpMultiplier = currentMetrics.burstiness > 5 ? 2 : 1;
-       nextMidi = 60 + step + (octave * 12 * jumpMultiplier);
-
-       if (nextMidi < 48) nextMidi += 12;
-       if (nextMidi > 84) nextMidi -= 12;
-    }
-  } else {
-       const step = scale[Math.floor(Math.random() * scale.length)];
-       const octave = Math.floor(Math.random() * 2) - 1;
-       nextMidi = 60 + step + (octave * 12);
-  }
+  if (nextMidi < 48) nextMidi += 12;
+  if (nextMidi > 84) nextMidi -= 12;
 
   let velocity = 60 + (currentMetrics.burstiness * 2);
   if (currentMetrics.backspaceFrequency > 0.1) velocity -= 20;
@@ -392,7 +327,17 @@ function startGenerationLoop() {
   loop();
 }
 
-// === Messaging and State Management ===
+// === Port Stream & Messaging Management ===
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === 'keystroke-stream') {
+    port.onMessage.addListener((message) => {
+      if (message && message.key) {
+        handleKeyTonePlayback(message.key);
+      }
+    });
+  }
+});
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'PLAY_KEY_TONE' || message.type === 'KEY_STROKE_EVENT') {
@@ -484,6 +429,6 @@ chrome.runtime.sendMessage({ type: 'GET_INITIAL_STATE' }, (result) => {
     }
   }
 
-  // Initialize model or procedural fallback engine
-  initModel();
+  // Initialize procedural audio engine
+  startGenerationLoop();
 });

@@ -6,6 +6,8 @@ let keystrokes = [];
 let lastKeyTime = Date.now();
 let isActive = true;
 let hadMetricsSent = false;
+let lastTargetElement = null;
+let lastTargetIsInput = false;
 
 // Check state on load
 chrome.storage.local.get(['isTypeMaestroEnabled'], (result) => {
@@ -24,12 +26,7 @@ chrome.storage.onChanged.addListener((changes) => {
   }
 });
 
-function isTextInput(element, event) {
-  // Ignore keyboard shortcuts (Cmd+C, Ctrl+V, Alt+Tab, etc.)
-  if (event.ctrlKey || event.metaKey || event.altKey) {
-    return false;
-  }
-
+function checkIsTextInput(element, event) {
   if (!element) return true;
 
   const tagName = element.tagName ? element.tagName.toLowerCase() : '';
@@ -43,12 +40,10 @@ function isTextInput(element, event) {
 
   if (element.isContentEditable) return true;
 
-  // Check role attribute directly
   if (element.getAttribute && element.getAttribute('role') === 'textbox') {
     return true;
   }
 
-  // Check known rich text editors and code editor containers
   if (element.closest) {
     const isEditor = element.closest(
       '[contenteditable="true"], [contenteditable=""], [role="textbox"], ' +
@@ -60,13 +55,28 @@ function isTextInput(element, event) {
     if (isEditor) return true;
   }
 
-  // Fallback: Check if pressed key is a typing character (letters, digits, space, backspace, enter, delete)
   const isTypingKey = event.key.length === 1 || ['Backspace', 'Enter', 'Delete', 'Spacebar'].includes(event.key);
   if (isTypingKey && tagName !== 'button' && tagName !== 'a' && tagName !== 'select') {
     return true;
   }
 
   return false;
+}
+
+function isTextInput(element, event) {
+  // Ignore keyboard shortcuts (Cmd+C, Ctrl+V, Alt+Tab, etc.)
+  if (event.ctrlKey || event.metaKey || event.altKey) {
+    return false;
+  }
+
+  if (element && element === lastTargetElement) {
+    return lastTargetIsInput;
+  }
+
+  const result = checkIsTextInput(element, event);
+  lastTargetElement = element;
+  lastTargetIsInput = result;
+  return result;
 }
 
 function calculateAndSendMetrics() {
@@ -127,25 +137,47 @@ document.addEventListener('keydown', (event) => {
     pauseDuration
   });
 
-  // Send real-time keystroke event for immediate tone playback
+  // Send real-time keystroke event ONLY for immediate tone playback
   sendKeyStroke(event.key);
-
-  // Calculate and send telemetry immediately on keypress
-  calculateAndSendMetrics();
 }, true); // Use capture phase to catch key events before web apps stop propagation
 
+let keystrokePort = null;
+
+function getKeystrokePort() {
+  if (!keystrokePort) {
+    try {
+      keystrokePort = chrome.runtime.connect({ name: 'keystroke-stream' });
+      keystrokePort.onDisconnect.addListener(() => {
+        keystrokePort = null;
+      });
+    } catch (e) {
+      keystrokePort = null;
+    }
+  }
+  return keystrokePort;
+}
+
 function sendKeyStroke(key) {
+  try {
+    const port = getKeystrokePort();
+    if (port) {
+      port.postMessage({ type: 'KEY_STROKE', key });
+      return;
+    }
+  } catch (e) {
+    keystrokePort = null;
+  }
+
+  // Fallback if port fails
   try {
     chrome.runtime.sendMessage({
       type: 'KEY_STROKE_EVENT',
       key
     });
-  } catch (e) {
-    // Background worker might be sleeping, ignore gracefully
-  }
+  } catch (e) {}
 }
 
-// Also calculate and send metrics periodically (every second)
+// Calculate and send telemetry metrics strictly periodically (every 1000ms)
 setInterval(() => {
   if (!isActive) return;
   calculateAndSendMetrics();
@@ -157,7 +189,5 @@ function sendMetrics(metrics) {
       type: 'TELEMETRY_UPDATE',
       metrics
     });
-  } catch (e) {
-    console.debug("Could not send metrics, background worker might be sleeping.", e);
-  }
+  } catch (e) {}
 }
