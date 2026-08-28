@@ -34,7 +34,7 @@ function checkIsTextInput(element, event) {
   if (tagName === 'textarea') return true;
   if (tagName === 'input') {
     const type = element.type ? element.type.toLowerCase() : 'text';
-    const textTypes = ['text', 'search', 'email', 'password', 'tel', 'url', 'number'];
+    const textTypes = ['text', 'search', 'email', 'tel', 'url', 'number'];
     return textTypes.includes(type);
   }
 
