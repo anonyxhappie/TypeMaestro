@@ -96,14 +96,24 @@ function calculateAndSendMetrics() {
   // Standard word is ~5 characters
   const wpm = (keysCount / 5) * (60000 / METRICS_WINDOW_MS);
 
-  // Backspace Frequency
-  const backspaces = keystrokes.filter(k => k.key === 'Backspace').length;
-  const backspaceFrequency = backspaces / keysCount;
+  // Single-pass calculation for backspaces and burstiness (variance)
+  let backspaces = 0;
+  let mean = 0;
+  let m2 = 0;
 
-  // Burstiness (variance of pause durations)
-  const pauses = keystrokes.map(k => k.pauseDuration);
-  const avgPause = pauses.reduce((a, b) => a + b, 0) / pauses.length;
-  const variance = pauses.reduce((a, b) => a + Math.pow(b - avgPause, 2), 0) / pauses.length;
+  for (let i = 0; i < keysCount; i++) {
+    const k = keystrokes[i];
+    if (k.key === 'Backspace') backspaces++;
+
+    const pause = k.pauseDuration;
+    const delta = pause - mean;
+    mean += delta / (i + 1);
+    const delta2 = pause - mean;
+    m2 += delta * delta2;
+  }
+
+  const backspaceFrequency = backspaces / keysCount;
+  const variance = m2 / keysCount;
   const burstiness = Math.sqrt(variance) || 0;
 
   // Last Pause Duration
