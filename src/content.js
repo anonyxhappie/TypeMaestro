@@ -118,12 +118,14 @@ function calculateAndSendMetrics() {
   hadMetricsSent = true;
 }
 
+const IGNORED_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab', 'Escape']);
+
 document.addEventListener('keydown', (event) => {
   if (!isActive) return;
   if (!isTextInput(event.target, event)) return;
 
   // Ignore pure modifier key presses
-  if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab', 'Escape'].includes(event.key)) {
+  if (IGNORED_KEYS.has(event.key)) {
     return;
   }
 
