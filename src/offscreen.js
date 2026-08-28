@@ -94,16 +94,14 @@ function autoCleanup(oscNode, ...connectedNodes) {
   };
 }
 
+const PRESET_CONFIGS = Object.freeze({
+  'Ambient Dream': Object.freeze({ type: 'sine', attack: 0.8, release: 2.0, reverb: 0.6, temp: 1.2, delay: 600 }),
+  'Lofi Chill': Object.freeze({ type: 'triangle', attack: 0.1, release: 1.0, reverb: 0.4, temp: 0.9, delay: 400 }),
+  'Deep Focus': Object.freeze({ type: 'sine', attack: 0.05, release: 1.5, reverb: 0.2, temp: 0.7, delay: 300 }),
+});
+
 function getPresetConfig() {
-  switch (currentPreset) {
-    case 'Ambient Dream':
-      return { type: 'sine', attack: 0.8, release: 2.0, reverb: 0.6, temp: 1.2, delay: 600 };
-    case 'Lofi Chill':
-      return { type: 'triangle', attack: 0.1, release: 1.0, reverb: 0.4, temp: 0.9, delay: 400 };
-    case 'Deep Focus':
-    default:
-      return { type: 'sine', attack: 0.05, release: 1.5, reverb: 0.2, temp: 0.7, delay: 300 };
-  }
+  return PRESET_CONFIGS[currentPreset] || PRESET_CONFIGS['Deep Focus'];
 }
 
 function playNote(midiNote, velocity) {
