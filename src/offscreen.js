@@ -18,6 +18,12 @@ let keystrokeVolume = 0.8;
 let ambientVolume = 0.3;
 let isAudioWarmedUp = false;
 
+// Precompute MIDI frequencies for performance (0-127)
+const midiFrequencyTable = new Float32Array(128);
+for (let i = 0; i < 128; i++) {
+  midiFrequencyTable[i] = 440 * Math.pow(2, (i - 69) / 12);
+}
+
 // === Web Audio API Synthesizer (Lazy Initializer) ===
 let audioCtx = null;
 let masterGain = null;
@@ -117,7 +123,7 @@ function playNote(midiNote, velocity) {
   }
 
   // Convert MIDI note to frequency
-  const frequency = 440 * Math.pow(2, (midiNote - 69) / 12);
+  const frequency = midiFrequencyTable[midiNote] || 440 * Math.pow(2, (midiNote - 69) / 12);
 
   const osc = ctx.createOscillator();
   osc.type = config.type;
@@ -177,7 +183,7 @@ function playInstrumentToneSync(midiNote, velocity = 85) {
     ctx.resume().catch(() => {});
   }
 
-  const frequency = 440 * Math.pow(2, (midiNote - 69) / 12);
+  const frequency = midiFrequencyTable[midiNote] || 440 * Math.pow(2, (midiNote - 69) / 12);
   const now = ctx.currentTime;
 
   const osc = ctx.createOscillator();
