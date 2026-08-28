@@ -26,6 +26,10 @@ chrome.storage.onChanged.addListener((changes) => {
   }
 });
 
+const TEXT_INPUT_TYPES = new Set(['text', 'search', 'email', 'password', 'tel', 'url', 'number']);
+const TYPING_KEYS = new Set(['Backspace', 'Enter', 'Delete', 'Spacebar']);
+const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab', 'Escape']);
+
 function checkIsTextInput(element, event) {
   if (!element) return true;
 
@@ -34,8 +38,7 @@ function checkIsTextInput(element, event) {
   if (tagName === 'textarea') return true;
   if (tagName === 'input') {
     const type = element.type ? element.type.toLowerCase() : 'text';
-    const textTypes = ['text', 'search', 'email', 'password', 'tel', 'url', 'number'];
-    return textTypes.includes(type);
+    return TEXT_INPUT_TYPES.has(type);
   }
 
   if (element.isContentEditable) return true;
@@ -55,7 +58,7 @@ function checkIsTextInput(element, event) {
     if (isEditor) return true;
   }
 
-  const isTypingKey = event.key.length === 1 || ['Backspace', 'Enter', 'Delete', 'Spacebar'].includes(event.key);
+  const isTypingKey = event.key.length === 1 || TYPING_KEYS.has(event.key);
   if (isTypingKey && tagName !== 'button' && tagName !== 'a' && tagName !== 'select') {
     return true;
   }
@@ -123,7 +126,7 @@ document.addEventListener('keydown', (event) => {
   if (!isTextInput(event.target, event)) return;
 
   // Ignore pure modifier key presses
-  if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab', 'Escape'].includes(event.key)) {
+  if (MODIFIER_KEYS.has(event.key)) {
     return;
   }
 
