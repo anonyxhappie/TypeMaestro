@@ -89,12 +89,11 @@ src/
 
 package.json
 vite.config.js
-tests / project tooling
 ```
 
 ## Privacy boundary
 
-TypeMaestro processes typing **timing and key-type metadata** locally to calculate rhythm statistics. The README's privacy claim is intentionally narrower than a general browser-security claim: typed text, passwords, and strings are not saved, logged, or transmitted by the extension's intended processing path.
+TypeMaestro processes typing **timing and key-type metadata** locally to calculate rhythm statistics. The privacy claim is intentionally scoped to the extension's intended processing path: typed text, passwords, and strings are not saved, logged, or transmitted.
 
 ## Project status
 
